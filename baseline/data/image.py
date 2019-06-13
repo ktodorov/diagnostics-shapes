@@ -5,3 +5,6 @@ class Image:
         self.sizes = sizes
         self.data = data
         self.metadata = metadata
+
+    def __str__(self):
+        return str(self.metadata)
