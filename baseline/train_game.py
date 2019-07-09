@@ -12,7 +12,7 @@ from helpers.game_helper import get_sender_receiver, get_trainer, get_training_d
 from helpers.train_helper import TrainHelper
 from helpers.file_helper import FileHelper
 from helpers.metrics_helper import MetricsHelper
-
+from data_to_zeroshot import *
 from tensorboardX import SummaryWriter
 
 def parse_arguments(args):
@@ -208,6 +208,23 @@ def parse_arguments(args):
         help="Resume the training from the saved model state",
         action="store_true"
     )
+    parser.add_argument(
+        "--zero-shot",
+        help="Run with zero-shot testing",
+        action="store_true"
+    )
+    parser.add_argument(
+        "--property-one",
+        type=int,
+        default=0,
+        help="Property to be tested for zero_shot",
+    )
+    parser.add_argument(
+        "--property-two",
+        type=int,
+        default=3,
+        help="Property to be tested for zero_shot",
+    )
 
     args = parser.parse_args(args)
 
@@ -337,7 +354,10 @@ def baseline(args):
         k=args.k,
         debugging=args.debugging,
         dataset_type=args.dataset_type,
-        step3=args.step3,)
+        step3=args.step3,
+        zero_shot=args.zero_shot,
+        property_one = args.property_one,
+        property_two = args.property_two)
 
     train_meta_data, valid_meta_data, test_meta_data = get_meta_data()
 
@@ -423,7 +443,7 @@ def baseline(args):
             if iteration % args.log_interval == 0:
 
                 valid_loss_meter, valid_acc_meter, _, = train_helper.evaluate(
-                    model, valid_data, valid_meta_data, device, args.inference_step, args.multi_task, args.step3)
+                    model, valid_data, valid_meta_data, device, args.inference_step, args.multi_task, args.step3, args.property_one, args.property_two)
 
                 new_best = False
                 

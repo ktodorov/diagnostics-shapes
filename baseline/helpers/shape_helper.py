@@ -51,7 +51,7 @@ def generate_shapes_dataset():
 
     # From Serhii's original experiment
     train_size = 74504
-    valid_size = 8279
+    valid_size = 8279*2
     test_size = 40504
 
     # --- Generate Datasets ----

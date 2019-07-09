@@ -48,6 +48,23 @@ class FileHelper:
         self._test_distractors_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.test.p')
         self._test_targets_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.test.p')
 
+        self._train_distractors_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.trainRANDOM.p')
+        self._train_targets_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.trainRANDOM.p')
+        self._valid_distractors_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.validRANDOM.p')
+        self._valid_targets_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.validRANDOM.p')
+        self._test_distractors_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.testRANDOM.p')
+        self._test_targets_RANDOM_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.testRANDOM.p')
+
+        # three datasets for zero shot tests
+        self._train_distractors_zs1_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.trainRANDOM.color2_size0_.p')#horizontal1_size1_size1_color2_.p')
+        self._train_targets_zs1_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.trainRANDOM.color2_size0_.p')#horizontal1_size1_size1_color2_.p')
+        self._valid_distractors_zs1_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.validRANDOM.color2_size0_.p')#horizontal1_size1_size1_color2_.p')
+        self._valid_targets_zs1_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.validRANDOM.color2_size0_.p')#horizontal1_size1_size1_color2_.p')
+        self._train_distractors_zs2_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.trainRANDOM.horizontal0_size1_vertical2_shape0_vertical1_color2_.p')
+        self._train_targets_zs2_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.trainRANDOM.horizontal0_size1_vertical2_shape0_vertical1_color2_.p')
+        self._train_distractors_zs3_path = os.path.join(self._data_path, STEP3_FOLDER, 'distractor_dict.trainRANDOM.horizontal0_vertical1_size1_shape2_color2_horizontal1_.p')
+        self._train_targets_zs3_path = os.path.join(self._data_path, STEP3_FOLDER, 'target_dict.trainRANDOM.horizontal0_vertical1_size1_shape2_color2_horizontal1_.p')
+
     @property
     def model_checkpoint_path(self):
         return self._model_checkpoint_path
@@ -116,6 +133,64 @@ class FileHelper:
     def test_targets_path(self):
         return self._test_targets_path
 
+    # RANDOM distractors
+    @property
+    def train_distractors_RANDOM_path(self):
+        return self._train_distractors_RANDOM_path
+
+    @property
+    def train_targets_RANDOM_path(self):
+        return self._train_targets_RANDOM_path
+
+    @property
+    def valid_distractors_RANDOM_path(self):
+        return self._valid_distractors_RANDOM_path
+
+    @property
+    def valid_targets_RANDOM_path(self):
+        return self._valid_targets_RANDOM_path
+
+    @property
+    def test_distractors_RANDOM_path(self):
+        return self._test_distractors_RANDOM_path
+
+    @property
+    def test_targets_RANDOM_path(self):
+        return self._test_targets_RANDOM_path
+
+    # zero shot paths
+    @property
+    def train_distractors_zs1_path(self):
+        return self._train_distractors_zs1_path
+
+    @property
+    def train_targets_zs1_path(self):
+        return self._train_targets_zs1_path
+
+    @property
+    def valid_distractors_zs1_path(self):
+        return self._valid_distractors_zs1_path
+
+    @property
+    def valid_targets_zs1_path(self):
+        return self._valid_targets_zs1_path
+
+    @property
+    def train_distractors_zs2_path(self):
+        return self._train_distractors_zs2_path
+
+    @property
+    def train_targets_zs2_path(self):
+        return self._train_targets_zs2_path
+
+    @property
+    def train_distractors_zs3_path(self):
+        return self._train_distractors_zs3_path
+
+    @property
+    def train_targets_zs3_path(self):
+        return self._train_targets_zs3_path
+
     def get_run_folder(self, sub_folder, model_name):
         if not sub_folder:
             run_folder = os.path.join(RUNS_FOLDER, model_name)
@@ -130,6 +205,10 @@ class FileHelper:
         
     def get_receiver_path(self, run_folder):
         result = os.path.join(run_folder, 'receiver.p')
+        return result
+
+    def get_visual_module_path(self, run_folder):
+        result = os.path.join(run_folder, 'visual_module.p')
         return result
 
     def get_input_path(self, dataset_type: DatasetType):

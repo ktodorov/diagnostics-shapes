@@ -1,0 +1,61 @@
+SURFSARA Property-specific step3
+  2240    52      3800  3801/10000      38% | 1.318743 0.571921 |   1.280606   1.305425  1.283491  1.430414  1.293782 |  0.561888  0.574597 0.561518 0.500462 0.661143
+
+SURFSARA random zeroshot1 
+  603    16       800   801/10000       8% | 6.784502 0.261588 |   6.071422   6.591558  7.027550  6.979186  7.252794 |  0.270940  0.274384 0.266924 0.251237 0.244453 | BEST
+
+SURFSARA random zeroshot2 
+  8     0         0     1/10000       0% | 3.000050 0.254732 |   3.000297   3.000281  3.000236  2.999736  2.999701 |  0.255747  0.238209 0.243664 0.263724 0.272317 | BEST
+
+  zero_shot with validation 84     0      1000  1001/1000      100% | 1.568051 0.484524 |   1.582455   1.560665  1.593553  1.529671  1.573911 |  0.477863  0.478390 0.480437 0.494834 0.491097 | BEST
+
+
+SURFSARA RANDOMIZED ZEROSHOT VALIDATION slurm-2595380.out
+  5727   111      6800  6801/10000      68% | 2.047040 0.455075 |   1.967967   2.103695  1.955549  1.903558  2.304432 |  0.475351  0.415090 0.483886 0.492937 0.408112 | BEST
+
+
+  Running step 3 - generating dataset
+ 74607
+74607
+color2_size0
+62311 12296 74607
+color2_size0_ 62311
+Save train dataset for target/distractor dictionaries
+ 74528
+74528
+horizontal0_size1
+61947 12581 74528
+horizontal0_size1_ 61947
+Save train dataset for target/distractor dictionaries
+ 74622
+74622
+horizontal0_vertical1
+66282 8340 74622
+horizontal0_vertical1_ 66282
+Save train dataset for target/distractor dictionaries
+ 74621
+74621
+color2_shape0
+66460 8161 74621
+color2_shape0_ 66460
+Save train dataset for target/distractor dictionaries
+ 74646
+74646
+vertical0_size0
+62044 12602 74646
+vertical0_size0_ 62044
+Save train dataset for target/distractor dictionaries
+ 74545
+74545
+vertical2_size0
+62101 12444 74545
+vertical2_size0_ 62101
+Save train dataset for target/distractor dictionaries
+ 74560
+74560
+size1_color2
+62189 12371 74560
+size1_color2_ 62189
+Save train dataset for target/distractor dictionaries
+Save valid dataset for target/distractor dictionaries
+Save test dataset for target/distractor dictionaries

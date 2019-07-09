@@ -120,8 +120,18 @@ def parse_arguments(args):
         default=0.5,
         help="Lambda value to be used to distinguish importance between baseline approach and the diagnostic classifiers approach",
     )
+    parser.add_argument(
+        "--debugging",
+        help="Enable debugging mode (default: False)",
+        action="store_true",
+    )
 
     args = parser.parse_args(args)
+
+    if args.debugging:
+        args.iterations = 1000
+        args.max_length = 10
+        args.batch_size = 16
 
     return args
 
