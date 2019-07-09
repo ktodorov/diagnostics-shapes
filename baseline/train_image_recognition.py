@@ -12,6 +12,7 @@ from torch.utils import data
 
 from datasets.message_dataset import MessageDataset
 from enums.dataset_type import DatasetType
+from enums.image_property import ImageProperty
 
 from helpers.game_helper import get_sender_receiver, get_trainer, get_training_data, get_meta_data
 from helpers.train_helper import TrainHelper
@@ -136,20 +137,6 @@ def parse_arguments(args):
         metavar="N",
         help="Adam learning rate (default: 1e-3)",
     )
-    # parser.add_argument(
-    #     "--sender-path",
-    #     type=str,
-    #     required=True,
-    #     metavar="S",
-    #     help="Sender to be loaded",
-    # )              
-    # parser.add_argument(
-    #     "--visual-module-path",
-    #     type=str,
-    #     required=True,
-    #     metavar="S",
-    #     help="Visual module to be loaded",
-    # )
     parser.add_argument(
         "--device",
         type=str,
@@ -185,6 +172,13 @@ def parse_arguments(args):
         "--test-mode",
         help="Only run the saved model on the test set",
         action="store_true"
+    )
+    parser.add_argument(
+        "--disabled-properties",
+        help="Disable properties from training",
+        type=lambda index: ImageProperty(int(index)),
+        nargs='*',
+        required=False
     )
 
     args = parser.parse_args(args)
@@ -248,7 +242,7 @@ def evaluate(model, criterion, dataloader, iteration, device, images_path):
 
     return loss_meter, acc_meter
 
-def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_task, multi_task_lambda):
+def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_task, multi_task_lambda, disabled_properties):
     result = f'max_len_{length}_vocab_{vocabulary_size}_seed_{seed}'
     if inference:
         result += '_inference'
@@ -261,10 +255,15 @@ def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_
         if multi_task_lambda:
             result += f'_lambda_{multi_task_lambda}'
 
+    if disabled_properties:
+        result += "_disabled"
+        for image_property in disabled_properties:
+            result += f'_{int(image_property)}'
+
     return result
 
 
-def generate_model_name(length, vocabulary_size, messages_seed, training_seed, inference, step3, multi_task, multi_task_lambda):
+def generate_model_name(length, vocabulary_size, messages_seed, training_seed, inference, step3, multi_task, multi_task_lambda, disabled_properties):
     result = f'max_len_{length}_vocab_{vocabulary_size}_msg_seed_{messages_seed}_train_seed_{training_seed}'
     if inference:
         result += '_inference'
@@ -276,6 +275,11 @@ def generate_model_name(length, vocabulary_size, messages_seed, training_seed, i
         result += '_multi'
         if multi_task_lambda:
             result += f'_lambda_{multi_task_lambda}'
+
+    if disabled_properties:
+        result += "_disabled"
+        for image_property in disabled_properties:
+            result += f'_{int(image_property)}'
 
     # result += '.p'
 
@@ -351,7 +355,8 @@ def baseline(args):
         inference=args.inference,
         step3=args.step3,
         multi_task=args.multi_task,
-        multi_task_lambda=args.multi_task_lambda)
+        multi_task_lambda=args.multi_task_lambda,
+        disabled_properties=args.disabled_properties)
         
     model_name = generate_model_name(
         length=args.max_length,
@@ -361,7 +366,8 @@ def baseline(args):
         inference=args.inference,
         step3=args.step3,
         multi_task=args.multi_task,
-        multi_task_lambda=args.multi_task_lambda)
+        multi_task_lambda=args.multi_task_lambda,
+        disabled_properties=args.disabled_properties)
 
     if not os.path.exists('results'):
         os.mkdir('results')

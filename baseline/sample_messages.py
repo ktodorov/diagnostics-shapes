@@ -11,6 +11,7 @@ from helpers.dataloader_helper import get_shapes_dataloader
 from helpers.train_helper import TrainHelper
 from helpers.metrics_helper import MetricsHelper
 
+from enums.image_property import ImageProperty
 
 def parse_arguments(args):
     # Training settings
@@ -106,11 +107,18 @@ def parse_arguments(args):
         default=0.5,
         help="Lambda value to be used to distinguish importance between baseline approach and the diagnostic classifiers approach",
     )
+    parser.add_argument(
+        "--disabled-properties",
+        help="Disable properties from training",
+        type=lambda index: ImageProperty(int(index)),
+        nargs='*',
+        required=False
+    )
 
     args = parser.parse_args(args)
     return args
 
-def generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda):
+def generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda, disabled_properties):
     name = f'max_len_{max_length}_vocab_{vocab_size}_seed_{seed}'
     if inference:
         name += '_inference'
@@ -123,22 +131,28 @@ def generate_unique_filename(max_length, vocab_size, seed, inference, step3, set
         if multi_task_lambda:
             name += f'_lambda_{multi_task_lambda}'
 
+    if disabled_properties:
+        name += "_disabled"
+        for image_property in disabled_properties:
+            name+= f'_{int(image_property)}'
+    
+
     name += f'.{set_type}'
 
     return name
 
-def generate_messages_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda):
+def generate_messages_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda, disabled_properties):
     """
     Generates a filename from baseline params (see baseline.py)
     """
-    name = f'{generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda)}.messages.npy'
+    name = f'{generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda, disabled_properties)}.messages.npy'
     return name
 
-def generate_indices_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda):
+def generate_indices_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda, disabled_properties):
     """
     Generates a filename from baseline params (see baseline.py)
     """
-    name = f'{generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda)}.indices.npy'
+    name = f'{generate_unique_filename(max_length, vocab_size, seed, inference, step3, set_type, multi_task, multi_task_lambda, disabled_properties)}.indices.npy'
     return name
 
 def sample_messages_from_dataset(model, args, dataset, dataset_type):
@@ -154,13 +168,13 @@ def sample_messages_from_dataset(model, args, dataset, dataset_type):
         current_messages = model(target, distractors)
         messages.extend(current_messages.cpu().tolist())
 
-    messages_filename = generate_messages_filename(args.max_length, args.vocab_size, args.seed, args.inference, args.step3, dataset_type, args.multi_task, args.multi_task_lambda)
+    messages_filename = generate_messages_filename(args.max_length, args.vocab_size, args.seed, args.inference, args.step3, dataset_type, args.multi_task, args.multi_task_lambda, args.disabled_properties)
     messages_filepath = os.path.join(args.output_path,  messages_filename)
     np.save(messages_filepath, np.array(messages))
 
     # Added lines to save properties as np.save as well
     # Separate file is made, similar to generate_messages_filename
-    indices_filename = generate_indices_filename(args.max_length, args.vocab_size, args.seed, args.inference, args.step3, dataset_type, args.multi_task, args.multi_task_lambda)
+    indices_filename = generate_indices_filename(args.max_length, args.vocab_size, args.seed, args.inference, args.step3, dataset_type, args.multi_task, args.multi_task_lambda, args.disabled_properties)
     indices_filepath = os.path.join(args.output_path, indices_filename)
     np.save(indices_filepath, np.array(indices))
 

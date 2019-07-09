@@ -13,6 +13,8 @@ from helpers.train_helper import TrainHelper
 from helpers.file_helper import FileHelper
 from helpers.metrics_helper import MetricsHelper
 from data_to_zeroshot import *
+from enums.image_property import ImageProperty
+
 from tensorboardX import SummaryWriter
 
 def parse_arguments(args):
@@ -209,6 +211,13 @@ def parse_arguments(args):
         action="store_true"
     )
     parser.add_argument(
+        "--disabled-properties",
+        help="Disable properties from training",
+        type=lambda index: ImageProperty(int(index)),
+        nargs='*',
+        required=False
+    )
+    parser.add_argument(
         "--zero-shot",
         help="Run with zero-shot testing",
         action="store_true"
@@ -331,7 +340,8 @@ def baseline(args):
         args.dataset_type,
         args.step3,
         baseline_receiver=baseline_receiver,
-        diagnostic_receiver=diagnostic_receiver)
+        diagnostic_receiver=diagnostic_receiver,
+        disabled_properties=args.disabled_properties)
 
     model_path = file_helper.create_unique_model_path(model_name)
 
@@ -424,13 +434,19 @@ def baseline(args):
             model, test_data, test_meta_data, device, args.inference_step, args.multi_task, args.step3)
 
         if args.multi_task:
-            average_test_accuracy = args.multi_task_lambda * test_acc_meter[0].avg + (1 - args.multi_task_lambda) * test_acc_meter[1].avg
-            average_test_loss = args.multi_task_lambda * test_loss_meter[0].avg + (1 - args.multi_task_lambda) * test_loss_meter[1].avg
+            # average_test_accuracy = args.multi_task_lambda * test_acc_meter[0].avg + (1 - args.multi_task_lambda) * test_acc_meter[1].avg
+            # average_test_loss = args.multi_task_lambda * test_loss_meter[0].avg + (1 - args.multi_task_lambda) * test_loss_meter[1].avg
+            print('TEST results')
+            print(f'    Original game | loss: {test_loss_meter[1].avg} | BASE accuracy: {test_acc_meter[1].avg}')
+            print(f'    Classifiers   | loss: {test_loss_meter[0].avg} | BASE accuracy: {test_acc_meter[0].avg}')
+            for i in range(len(test_loss_meter[0].averages)):
+                print(f'{i} | loss: {test_loss_meter[0].averages[i]} | acc: {test_acc_meter[0].averages[i]}')
+
         else:
             average_test_accuracy = test_acc_meter.avg
             average_test_loss = test_loss_meter.avg
+            print(f'TEST results: loss: {average_test_loss} | accuracy: {average_test_accuracy}')
 
-        print(f'TEST results: loss: {average_test_loss} | accuracy: {average_test_accuracy}')
         return
 
     while iteration < args.iterations:

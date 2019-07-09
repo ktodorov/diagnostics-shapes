@@ -9,6 +9,7 @@ from torch.utils import data
 
 from datasets.diagnostic_dataset import DiagnosticDataset
 from enums.dataset_type import DatasetType
+from enums.image_property import ImageProperty
 from helpers.metadata_helper import get_metadata_properties
 from helpers.train_helper import TrainHelper
 from models.diagnostic_ensemble import DiagnosticEnsemble
@@ -125,6 +126,13 @@ def parse_arguments(args):
         help="Enable debugging mode (default: False)",
         action="store_true",
     )
+    parser.add_argument(
+        "--disabled-properties",
+        help="Disable properties from training",
+        type=lambda index: ImageProperty(int(index)),
+        nargs='*',
+        required=False
+    )
 
     args = parser.parse_args(args)
 
@@ -174,7 +182,7 @@ def perform_iteration(model: DiagnosticEnsemble, dataloader, batch_size: int, de
 
     return accuracies_meter, losses_meter
 
-def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_task, multi_task_lambda):
+def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_task, multi_task_lambda, disabled_properties):
     result = f'max_len_{length}_vocab_{vocabulary_size}_seed_{seed}'
     if inference:
         result += '_inference'
@@ -186,10 +194,15 @@ def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_
         result += '_multi'
         if multi_task_lambda:
             result += f'_lambda_{multi_task_lambda}'
+            
+    if disabled_properties:
+        result += "_disabled"
+        for image_property in disabled_properties:
+            result += f'_{int(image_property)}'
 
     return result
 
-def generate_model_name(length, vocabulary_size, messages_seed, training_seed, inference, step3, multi_task, multi_task_lambda):
+def generate_model_name(length, vocabulary_size, messages_seed, training_seed, inference, step3, multi_task, multi_task_lambda, disabled_properties):
     result = f'max_len_{length}_vocab_{vocabulary_size}_msg_seed_{messages_seed}_train_seed_{training_seed}'
     if inference:
         result += '_inference'
@@ -201,6 +214,11 @@ def generate_model_name(length, vocabulary_size, messages_seed, training_seed, i
         result += '_multi'
         if multi_task_lambda:
             result += f'_lambda_{multi_task_lambda}'
+            
+    if disabled_properties:
+        result += "_disabled"
+        for image_property in disabled_properties:
+            result += f'_{int(image_property)}'
 
     result += '.p'
 
@@ -257,7 +275,8 @@ def baseline(args):
         inference=args.inference,
         step3=args.step3,
         multi_task=args.multi_task,
-        multi_task_lambda=args.multi_task_lambda)
+        multi_task_lambda=args.multi_task_lambda,
+        disabled_properties=args.disabled_properties)
 
     model_name = generate_model_name(
         length=args.max_length,
@@ -267,7 +286,8 @@ def baseline(args):
         inference=args.inference,
         step3=args.step3,
         multi_task=args.multi_task,
-        multi_task_lambda=args.multi_task_lambda)
+        multi_task_lambda=args.multi_task_lambda,
+        disabled_properties=args.disabled_properties)
 
     model_path = os.path.join(inference_path, model_name)
 

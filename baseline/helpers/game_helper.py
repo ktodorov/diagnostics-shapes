@@ -76,14 +76,13 @@ def get_sender_receiver(device, args) -> (ShapesSender, ShapesReceiver, Messages
 
     if args.inference_step or args.multi_task:
         diagnostic_receiver = MessagesReceiver(
-            num_classes_by_model= [3, 3, 2, 3, 3],
+            num_classes_by_model=[3, 3, 2, 3, 3],
             device=device)
 
     if args.sender_path:
         sender = torch.load(args.sender_path)
     if args.receiver_path:
         baseline_receiver = torch.load(args.receiver_path)
-
 
     # This is only used when not training using raw data
     # if args.freeze_sender:
@@ -114,15 +113,16 @@ def get_sender_receiver(device, args) -> (ShapesSender, ShapesReceiver, Messages
 
 
 def get_trainer(
-    sender,
-    device,
-    inference_step,
-    multi_task,
-    multi_task_lambda,
-    dataset_type,
-    step3,
-    baseline_receiver = None,
-    diagnostic_receiver = None):
+        sender,
+        device,
+        inference_step,
+        multi_task,
+        multi_task_lambda,
+        dataset_type,
+        step3,
+        baseline_receiver=None,
+        diagnostic_receiver=None,
+        disabled_properties=None):
     extract_features = dataset_type == "raw"
 
     return ShapesTrainer(
@@ -134,7 +134,9 @@ def get_trainer(
         step3,
         baseline_receiver=baseline_receiver,
         diagnostic_receiver=diagnostic_receiver,
-        extract_features=extract_features)
+        extract_features=extract_features,
+        disabled_properties=disabled_properties)
+
 
 def get_meta_data():
     train_meta_data = get_metadata_properties(dataset=DatasetType.Train)
@@ -162,7 +164,8 @@ def get_training_data(device, batch_size, k, debugging, dataset_type, step3, zer
         valid_meta_data=valid_meta_data)
 
     # valid_meta_data = get_shapes_metadata(dataset=DatasetType.Valid)
-    # valid_features = get_shapes_features(device=device, dataset=DatasetType.Valid)
+    valid_features = get_shapes_features(
+        device=device, dataset=DatasetType.Valid)
 
     return (train_data, valid_data, test_data, valid_meta_data, valid_features)
 

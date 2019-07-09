@@ -155,6 +155,11 @@ class TrainHelper():
             name += "_multi"
             if params.multi_task_lambda:
                 name += f'_lambda_{params.multi_task_lambda}'
+                
+        if params.disabled_properties:
+            name += "_disabled"
+            for image_property in params.disabled_properties:
+                name+= f'_{int(image_property)}'
             
         return name
 

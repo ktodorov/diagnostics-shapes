@@ -9,6 +9,8 @@ from .shapes_receiver import ShapesReceiver
 from .messages_receiver import MessagesReceiver
 from .shapes_sender import ShapesSender
 
+from enums.image_property import ImageProperty
+
 import numpy as np
 
 class ShapesTrainer(nn.Module):
@@ -22,7 +24,8 @@ class ShapesTrainer(nn.Module):
             step3,
             baseline_receiver: ShapesReceiver = None,
             diagnostic_receiver: MessagesReceiver = None,
-            extract_features=False):
+            extract_features=False,
+            disabled_properties=None):
         super().__init__()
 
         self.sender = sender
@@ -39,6 +42,7 @@ class ShapesTrainer(nn.Module):
         self.step3 = step3
         self.multi_task = multi_task
         self.multi_task_lambda = multi_task_lambda
+        self.disabled_properties = disabled_properties
 
     def _pad(self, messages, seq_lengths):
         """
@@ -93,10 +97,14 @@ class ShapesTrainer(nn.Module):
                 current_targets = meta_data[:, i].to(device=self.device)
                 # print('curtar',i, current_targets.shape)
 
-                current_loss = nn.functional.cross_entropy(out_property, current_targets)
+                if self.disabled_properties and ImageProperty(i) in self.disabled_properties:
+                    current_loss = 10 # we revert the current property loss so the model can never learn it
+                else:
+                    current_loss = nn.functional.cross_entropy(out_property, current_targets)
+                    loss += current_loss
+                    current_loss = current_loss.item()
 
-                loss += current_loss
-                inference_losses[i] = current_loss.item()
+                inference_losses[i] = current_loss
                 inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
             # print('fw loss',loss )
             
