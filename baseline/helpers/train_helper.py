@@ -19,7 +19,8 @@ class TrainHelper():
         meta_data,
         device,
         inference_step,
-        multi_task):
+        multi_task,
+        zero_shot):
         """
         Train for single batch
         """
@@ -32,8 +33,9 @@ class TrainHelper():
         if inference_step or multi_task:
             md = torch.tensor(meta_data[indices[:,0], :], device=device, dtype=torch.int64)
             # print(meta_data.shape)
-            md = md5
             # stop
+        elif zero_shot:
+            md = md5
         else:
             md = None
             
@@ -44,7 +46,7 @@ class TrainHelper():
 
         return losses, accuracies
 
-    def evaluate(self, model, dataloader, valid_meta_data, device, inference_step, multi_task, step3, property_one, property_two):
+    def evaluate(self, model, dataloader, valid_meta_data, device, inference_step, multi_task, step3, property_one, property_two, zero_shot):
         
         if multi_task:
             loss_meter = [AverageEnsembleMeter(5), AverageMeter()]
@@ -77,10 +79,11 @@ class TrainHelper():
             # print(torch.tensor(valid_meta_data[:,one_begin:one_end]).shape,valid_meta_data[indices[:,0],one_begin:one_end].shape)
             # stop
 
-            if inference_step or multi_task:
-                vmd = torch.tensor(valid_meta_data[indices[:, 0], :], device=device, dtype=torch.int64)
-                # I set this to vmd5 for now, must only be done for zeroshot
-                vmd = vmd5
+            if inference_step or multi_task:                
+                if zero_shot:
+                    vmd = vmd5
+                else:
+                    vmd = torch.tensor(valid_meta_data[indices[:, 0], :], device=device, dtype=torch.int64)
             else:
                 vmd = None
 

@@ -148,8 +148,7 @@ def get_dataloaders(
                     valid_features,
                     mean=train_dataset.mean,
                     std=train_dataset.std,
-                    raw=True,
-                    valid_meta_data=target_valid_metadata,)
+                    raw=True)
 
 
             test_dataset = ShapesDataset(

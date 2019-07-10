@@ -155,7 +155,8 @@ class ShapesDataset:
 
             if type(self.distractor_meta_data) == type(None):
                 distractors_idxs = indices[1:]
-                vmd5 = self.convert_back(self.valid_meta_data[indices[0]])
+                # vmd5 = self.convert_back(self.valid_meta_data[indices[0]])
+                vmd5 = []
 
             distractors = []
             for d_idx in distractors_idxs:
