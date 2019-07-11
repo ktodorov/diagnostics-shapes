@@ -51,8 +51,9 @@ class TrainHelper():
         optimizer.step()
 
         if disabled_properties and disabled_properties_optimizer:
-            for disabled_property in disabled_properties:
-                losses[0][int(disabled_property)].backward()
+            for i, disabled_property in enumerate(disabled_properties):
+                should_retain_graph = not (i == len(disabled_properties) - 1)
+                losses[0][int(disabled_property)].backward(retain_graph=should_retain_graph)
                 losses[0][int(disabled_property)] = losses[0][int(disabled_property)].item()
 
             disabled_properties_optimizer.step()

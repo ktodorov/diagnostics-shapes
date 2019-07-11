@@ -402,7 +402,7 @@ def baseline(args):
     
     disabled_properties_optimizer = None
     if args.disabled_properties and len(args.disabled_properties) > 0:
-        disabled_properties_optimizer = torch.optim.Adam(model.sender.parameters(), lr=args.lr)
+        disabled_properties_optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
 
     # Train
     current_patience = args.patience
