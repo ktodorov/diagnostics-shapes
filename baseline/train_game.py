@@ -312,6 +312,9 @@ def baseline(args):
     else:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    if args.disabled_properties and not args.multi_task:
+        raise Exception("Disabled properties can only be used when training in multi-task mode")
+
     file_helper = FileHelper()
     train_helper = TrainHelper(device)
     train_helper.seed_torch(seed=args.seed)
@@ -396,6 +399,10 @@ def baseline(args):
     model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    
+    disabled_properties_optimizer = None
+    if args.disabled_properties and len(args.disabled_properties) > 0:
+        disabled_properties_optimizer = torch.optim.Adam(model.sender.parameters(), lr=args.lr)
 
     # Train
     current_patience = args.patience
@@ -454,12 +461,30 @@ def baseline(args):
             print(f'{iteration}/{args.iterations}       \r', end='')
 
             _, _ = train_helper.train_one_batch(
-                model, train_batch, optimizer, train_meta_data, device, args.inference_step, args.multi_task, args.zero_shot)
+                model,
+                train_batch,
+                optimizer,
+                train_meta_data,
+                device,
+                args.inference_step,
+                args.multi_task,
+                args.zero_shot,
+                args.disabled_properties,
+                disabled_properties_optimizer)
 
             if iteration % args.log_interval == 0:
 
                 valid_loss_meter, valid_acc_meter, _, = train_helper.evaluate(
-                    model, valid_data, valid_meta_data, device, args.inference_step, args.multi_task, args.step3, args.property_one, args.property_two, args.zero_shot)
+                    model,
+                    valid_data,
+                    valid_meta_data,
+                    device,
+                    args.inference_step,
+                    args.multi_task,
+                    args.step3,
+                    args.property_one,
+                    args.property_two,
+                    args.zero_shot)
 
                 new_best = False
                 

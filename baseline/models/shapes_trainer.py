@@ -89,25 +89,24 @@ class ShapesTrainer(nn.Module):
 
             loss = 0
 
-            inference_accuracies = np.zeros((len(out),))
-            inference_losses = np.zeros((len(out),))
+            inference_accuracies = torch.zeros((len(out),))
+            inference_losses = torch.zeros((len(out),))
 
             for i, out_property in enumerate(out):
-                # print('md_shippa',meta_data[:,i].shape, meta_data.shape)
                 current_targets = meta_data[:, i].to(device=self.device)
-                # print('curtar',i, current_targets.shape)
 
+                current_loss = nn.functional.cross_entropy(out_property, current_targets)
                 if self.disabled_properties and ImageProperty(i) in self.disabled_properties:
-                    current_loss = 10 # we revert the current property loss so the model can never learn it
+                    inference_losses[i] = -current_loss
+                    inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
+                    continue
                 else:
-                    current_loss = nn.functional.cross_entropy(out_property, current_targets)
                     loss += current_loss
                     current_loss = current_loss.item()
 
                 inference_losses[i] = current_loss
                 inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
-            # print('fw loss',loss )
-            
+
             if not self.multi_task:
                 return loss, inference_losses, inference_accuracies, messages
             

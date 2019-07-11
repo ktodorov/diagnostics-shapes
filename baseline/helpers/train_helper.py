@@ -20,13 +20,18 @@ class TrainHelper():
         device,
         inference_step,
         multi_task,
-        zero_shot):
+        zero_shot,
+        disabled_properties,
+        disabled_properties_optimizer):
         """
         Train for single batch
         """
         model.train()
 
         optimizer.zero_grad()
+
+        if disabled_properties_optimizer:
+            disabled_properties_optimizer.zero_grad()
 
         target, distractors, indices, md5 = batch
 
@@ -41,8 +46,17 @@ class TrainHelper():
             
         loss, losses, accuracies, _ = model.forward(target, distractors, md)
 
-        loss.backward()
+
+        loss.backward(retain_graph=True)
         optimizer.step()
+
+        if disabled_properties and disabled_properties_optimizer:
+            for disabled_property in disabled_properties:
+                losses[0][int(disabled_property)].backward()
+                losses[0][int(disabled_property)] = losses[0][int(disabled_property)].item()
+
+            disabled_properties_optimizer.step()
+
 
         return losses, accuracies
 
@@ -93,10 +107,10 @@ class TrainHelper():
             # print('helper-loss',loss2)
 
             if multi_task:
-                loss_meter[0].update(loss2[0])
+                loss_meter[0].update(loss2[0].detach().numpy())
                 loss_meter[1].update(loss2[1])
 
-                acc_meter[0].update(acc[0])
+                acc_meter[0].update(acc[0].detach().numpy())
                 acc_meter[1].update(acc[1])
             elif step3:
                 # Note that for the RANDOM step3 dict, lkey is just a random integer
@@ -114,6 +128,9 @@ class TrainHelper():
                 acc_meter.update(acc)
                 # print(acc_meter.averages)
 
+            elif inference_step:
+                loss_meter.update(loss2.detach().numpy())
+                acc_meter.update(acc.detach().numpy())
             else:
                 loss_meter.update(loss2)
                 acc_meter.update(acc)
