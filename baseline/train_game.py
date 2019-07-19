@@ -302,6 +302,26 @@ def load_model_state(model, model_path):
 
     return epoch, iteration, best_score
 
+def get_sender_optimizer_parameters(args, model):
+    if not args.disabled_properties:
+        return None
+
+    return model.sender.parameters()
+
+def get_receiver_optimizer_parameters(args, model):
+    result = list()
+    if args.inference_step or args.multi_task:
+        result += list(model.diagnostic_receiver.parameters())
+    
+    if not args.inference_step or args.multi_task:
+        result += list(model.baseline_receiver.parameters())
+
+    result += list(model.visual_module.parameters())
+
+    if not args.disabled_properties:
+        result += list(model.sender.parameters())
+
+    return result
 
 def baseline(args):
 
@@ -398,11 +418,13 @@ def baseline(args):
 
     model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    
-    disabled_properties_optimizer = None
-    if args.disabled_properties and len(args.disabled_properties) > 0:
-        disabled_properties_optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
+    sender_parameters = get_sender_optimizer_parameters(args, model)
+    sender_optimizer = None
+    if sender_parameters:
+        sender_optimizer = torch.optim.Adam(sender_parameters, lr=1e-2)
+
+    receiver_parameters = get_receiver_optimizer_parameters(args, model)
+    receiver_optimizer = torch.optim.Adam(receiver_parameters, lr=1e-3)
 
     # Train
     current_patience = args.patience
@@ -421,13 +443,6 @@ def baseline(args):
         log_template = ' '.join(
             '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,| {:>8.6f} {:>7.6f} | {:>10.6f} {:>10.6f} {:>9.6f} {:>9.6f} {:>9.6f} | {:>9.6f} {:>9.6f} {:>8.6f} {:>8.6f} {:>8.6f} | {:>4s}'.split(','))
 
-        # writers = [
-        #     SummaryWriter(logdir=f'{run_folder}/Color'),
-        #     SummaryWriter(logdir=f'{run_folder}/Shape'),
-        #     SummaryWriter(logdir=f'{run_folder}/Size'),
-        #     SummaryWriter(logdir=f'{run_folder}/Vertical_position'),
-        #     SummaryWriter(logdir=f'{run_folder}/Horizontal_position')
-        # ]
     if args.step3:
         # The data is saved according to the following sequence [hp,vp,sh,co,si]
         # Thus it should be checked still, with the order in the print statements        
@@ -463,14 +478,14 @@ def baseline(args):
             _, _ = train_helper.train_one_batch(
                 model,
                 train_batch,
-                optimizer,
+                receiver_optimizer,
                 train_meta_data,
                 device,
                 args.inference_step,
                 args.multi_task,
                 args.zero_shot,
                 args.disabled_properties,
-                disabled_properties_optimizer)
+                sender_optimizer)
 
             if iteration % args.log_interval == 0:
 
@@ -554,11 +569,6 @@ def baseline(args):
                             valid_acc_meter.averages[4],
                             "BEST" if new_best else ""
                         ))
-
-                        # for i in range(5):
-                        #     writers[i].add_scalar('accuracy', valid_acc_meter.averages[i], global_step=iteration)
-                        #     writers[i].add_scalar('loss', valid_loss_meter.averages[i], global_step=iteration)
-
                     else:
                         print(
                             "{}/{} Iterations: val loss: {}, val accuracy: {}".format(

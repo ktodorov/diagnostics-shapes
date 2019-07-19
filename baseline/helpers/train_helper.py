@@ -15,49 +15,40 @@ class TrainHelper():
         self,
         model: ShapesTrainer,
         batch,
-        optimizer,
+        receiver_optimizer,
         meta_data,
         device,
         inference_step,
         multi_task,
         zero_shot,
         disabled_properties,
-        disabled_properties_optimizer):
+        sender_optimizer):
         """
         Train for single batch
         """
         model.train()
 
-        optimizer.zero_grad()
-
-        if disabled_properties_optimizer:
-            disabled_properties_optimizer.zero_grad()
+        receiver_optimizer.zero_grad()
 
         target, distractors, indices, md5 = batch
 
         if inference_step or multi_task:
             md = torch.tensor(meta_data[indices[:,0], :], device=device, dtype=torch.int64)
-            # print(meta_data.shape)
-            # stop
         elif zero_shot:
             md = md5
         else:
             md = None
             
-        loss, losses, accuracies, _ = model.forward(target, distractors, md)
+        loss, disabled_loss, losses, accuracies, _ = model.forward(target, distractors, md)
 
 
         loss.backward(retain_graph=True)
-        optimizer.step()
+        receiver_optimizer.step()
 
-        if disabled_properties and disabled_properties_optimizer:
-            for i, disabled_property in enumerate(disabled_properties):
-                should_retain_graph = not (i == len(disabled_properties) - 1)
-                losses[0][int(disabled_property)].backward(retain_graph=should_retain_graph)
-                losses[0][int(disabled_property)] = losses[0][int(disabled_property)].item()
-
-            disabled_properties_optimizer.step()
-
+        if sender_optimizer:
+            sender_optimizer.zero_grad()
+            disabled_loss.backward()
+            sender_optimizer.step()
 
         return losses, accuracies
 
@@ -103,7 +94,7 @@ class TrainHelper():
                 vmd = None
 
 
-            _, loss2, acc, msg = model.forward(target, distractors, vmd)
+            _, _, loss2, acc, msg = model.forward(target, distractors, vmd)
 
             # print('helper-loss',loss2)
 

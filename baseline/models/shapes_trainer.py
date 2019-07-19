@@ -88,6 +88,7 @@ class ShapesTrainer(nn.Module):
             out = self.diagnostic_receiver.forward(messages, meta_data)
 
             loss = 0
+            disabled_loss = 0
 
             inference_accuracies = torch.zeros((len(out),))
             inference_losses = torch.zeros((len(out),))
@@ -97,18 +98,18 @@ class ShapesTrainer(nn.Module):
 
                 current_loss = nn.functional.cross_entropy(out_property, current_targets)
                 if self.disabled_properties and ImageProperty(i) in self.disabled_properties:
-                    inference_losses[i] = -current_loss
-                    inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
-                    continue
+                    disabled_loss -= current_loss
                 else:
-                    loss += current_loss
-                    current_loss = current_loss.item()
+                    disabled_loss += current_loss
+                
+                loss += current_loss
+                current_loss = current_loss.item()
 
                 inference_losses[i] = current_loss
                 inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
 
             if not self.multi_task:
-                return loss, inference_losses, inference_accuracies, messages
+                return loss, None, inference_losses, inference_accuracies, messages
             
             final_loss = self.multi_task_lambda * loss
         
@@ -159,8 +160,8 @@ class ShapesTrainer(nn.Module):
 
             if not self.multi_task:
                 # print(type(baseline_mean_loss), type(baseline_loss), type(baseline_accuracy))
-                return baseline_mean_loss, baseline_loss, baseline_accuracy, messages
+                return baseline_mean_loss, None, baseline_loss, baseline_accuracy, messages
 
             final_loss += (1 - self.multi_task_lambda) * baseline_mean_loss
 
-            return final_loss, (inference_losses, baseline_loss), (inference_accuracies, baseline_accuracy), messages
+            return final_loss, disabled_loss, (inference_losses, baseline_loss), (inference_accuracies, baseline_accuracy), messages

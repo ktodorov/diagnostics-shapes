@@ -15,8 +15,6 @@ from helpers.train_helper import TrainHelper
 from models.diagnostic_ensemble import DiagnosticEnsemble
 from metrics.average_ensemble_meter import AverageEnsembleMeter
 
-import matplotlib.pyplot as plt
-
 header = '  Time Epoch Iteration    Progress (%Epoch) | Loss-Avg  Acc-Avg | Loss-Color Loss-Shape Loss-Size Loss-PosH Loss-PosW | Acc-Color Acc-Shape Acc-Size Acc-PosH Acc-PosW |    Dataset | Best'
 log_template = ' '.join(
     '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,| {:>8.6f} {:>7.6f} | {:>10.6f} {:>10.6f} {:>9.6f} {:>9.6f} {:>9.6f} | {:>9.6f} {:>9.6f} {:>8.6f} {:>8.6f} {:>8.6f} | {:>10s} | {:>4s}'.split(','))

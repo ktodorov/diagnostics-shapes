@@ -34,13 +34,13 @@ class DiagnosticDataset(data.Dataset):
     def _get_message_data(self):
         messages_filename = f'{self._unique_name}.{self._dataset_type}.messages.npy'
         # messages_data = np.load(os.path.join(self._file_helper.messages_folder_path, messages_filename))
-        messages_data = np.load(os.path.join(self._file_helper.messages_folder_path, 'testing',messages_filename))
+        messages_data = np.load(os.path.join(self._file_helper.messages_folder_path, messages_filename))
 
         return messages_data
 
     def _get_indices_data(self):
         indices_filename = f'{self._unique_name}.{self._dataset_type}.indices.npy'
         # indices_data = np.load(os.path.join(self._file_helper.messages_folder_path, indices_filename))
-        indices_data = np.load(os.path.join(self._file_helper.messages_folder_path, 'testing',indices_filename))
+        indices_data = np.load(os.path.join(self._file_helper.messages_folder_path, indices_filename))
 
         return indices_data
