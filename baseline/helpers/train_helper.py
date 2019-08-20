@@ -39,7 +39,7 @@ class TrainHelper():
         else:
             md = None
             
-        loss, disabled_loss, losses, accuracies, _ = model.forward(target, distractors, md)
+        loss, disabled_loss, losses, accuracies, _, _, _ = model.forward(target, distractors, md)
 
 
         loss.backward(retain_graph=True)
@@ -67,24 +67,13 @@ class TrainHelper():
         messages = []
 
         model.eval()
+
+        hidden_sender_parameters, hidden_receiver_parameters = [], []
+
         for batch in dataloader:
             # note step3 takes lkey, but for zeroshot this is vmd5, thus step3 and zeroshot can't be combined
-            # target, distractors, indices, lkey = batch
             target, distractors, indices, vmd5 = batch
-            # print(target.shape, len(distractors))
-            # print(property_one, property_two)
-            # print(valid_meta_data[indices[:, :], :])
-            # one_begin = round(property_one/3)*3
-            # one_end = round(property_one/3)*3+3
-            # two_begin = round(property_two/3)*3
-            # two_end = round(property_two/3)*3+3
-            # print(valid_meta_data.shape)
-            # print(indices)
-            # stop
-            # print(valid_meta_data[indices[:, :], :])
-            # print(torch.tensor(valid_meta_data[:,one_begin:one_end]).shape,valid_meta_data[indices[:,0],one_begin:one_end].shape)
-            # stop
-
+          
             if inference_step or multi_task:                
                 if zero_shot:
                     vmd = vmd5
@@ -94,9 +83,9 @@ class TrainHelper():
                 vmd = None
 
 
-            _, _, loss2, acc, msg = model.forward(target, distractors, vmd)
-
-            # print('helper-loss',loss2)
+            _, _, loss2, acc, msg, h_s, h_r = model.forward(target, distractors, vmd)
+            hidden_sender_parameters.append(h_s.detach().cpu().numpy())
+            hidden_receiver_parameters.append(h_r.detach().cpu().numpy())
 
             if multi_task:
                 loss_meter[0].update(loss2[0].detach().numpy())
@@ -118,7 +107,6 @@ class TrainHelper():
 
                 loss_meter.update(loss2)
                 acc_meter.update(acc)
-                # print(acc_meter.averages)
 
             elif inference_step:
                 loss_meter.update(loss2.detach().numpy())
@@ -129,10 +117,15 @@ class TrainHelper():
 
             messages.append(msg)
 
+        hidden_sender_parameters = np.concatenate(hidden_sender_parameters)
+        hidden_receiver_parameters = np.concatenate(hidden_receiver_parameters)
+
         return (
             loss_meter,
             acc_meter,
-            torch.cat(messages, 0)
+            torch.cat(messages, 0), 
+            hidden_sender_parameters,
+            hidden_receiver_parameters
         )
 
     def get_filename_from_baseline_params(self, params):

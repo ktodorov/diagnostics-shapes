@@ -63,51 +63,17 @@ def get_sender_receiver(device, args) -> (ShapesSender, ShapesReceiver, Messages
             inference_step=args.inference_step
         )
 
-        if not args.inference_step or args.multi_task:
-            baseline_receiver = ShapesReceiver(
-                args.vocab_size,
-                device,
-                embedding_size=args.embedding_size,
-                hidden_size=args.hidden_size,
-                cell_type=cell_type,
-                genotype=genotype,
-                dataset_type=args.dataset_type,
-            )
-
-    if args.inference_step or args.multi_task:
-        diagnostic_receiver = MessagesReceiver(
-            num_classes_by_model=[3, 3, 2, 3, 3],
-            device=device)
+        baseline_receiver = ShapesReceiver(
+            args.vocab_size,
+            device,
+            embedding_size=args.embedding_size,
+            hidden_size=args.hidden_size
+        )
 
     if args.sender_path:
         sender = torch.load(args.sender_path)
     if args.receiver_path:
         baseline_receiver = torch.load(args.receiver_path)
-
-    # This is only used when not training using raw data
-    # if args.freeze_sender:
-    #     for param in sender.parameters():
-    #         param.requires_grad = False
-    # else:
-    #     s_visual_module = ShapesMetaVisualModule(
-    #         hidden_size=sender.hidden_size, dataset_type=args.dataset_type
-    #     )
-    #     sender.input_module = s_visual_module
-
-    # if args.freeze_receiver:
-    #     for param in receiver.parameters():
-    #         param.requires_grad = False
-    # else:
-    #     r_visual_module = ShapesMetaVisualModule(
-    #         hidden_size=receiver.hidden_size,
-    #         dataset_type=args.dataset_type,
-    #         sender=False,
-    #     )
-
-    #     if args.single_model:
-    #         receiver.output_module = r_visual_module
-    #     else:
-    #         receiver.input_module = r_visual_module
 
     return sender, baseline_receiver, diagnostic_receiver
 
@@ -120,6 +86,7 @@ def get_trainer(
         multi_task_lambda,
         dataset_type,
         step3,
+        hidden_size,
         baseline_receiver=None,
         diagnostic_receiver=None,
         disabled_properties=None):
@@ -132,6 +99,8 @@ def get_trainer(
         multi_task,
         multi_task_lambda,
         step3,
+        num_classes_by_model=[3, 3, 2, 3, 3],
+        num_hidden=hidden_size,
         baseline_receiver=baseline_receiver,
         diagnostic_receiver=diagnostic_receiver,
         extract_features=extract_features,

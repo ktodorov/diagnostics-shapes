@@ -209,7 +209,8 @@ def baseline(args):
         multi_task=args.multi_task,
         multi_task_lambda=args.multi_task_lambda,
         dataset_type="raw",
-        step3=False)
+        step3=False,
+        hidden_size=args.hidden_size)
     
     model.visual_module.load_state_dict(checkpoint['visual_module'])
 

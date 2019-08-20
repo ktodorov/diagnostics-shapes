@@ -2,10 +2,9 @@ import torch
 import numpy as np
 import scipy.spatial
 import scipy.stats
+import math
 
-
-def one_hot(a):
-    ncols = a.max() + 1
+def one_hot(a, ncols):
     out = np.zeros((a.size, ncols), dtype=np.uint8)
     out[np.arange(a.size), a.ravel()] = 1
     out.shape = a.shape + (ncols,)
@@ -18,6 +17,7 @@ def representation_similarity_analysis(
     generated_messages,
     hidden_sender,
     hidden_receiver,
+    vocab_size,
     samples=5000,
     tre=False,
 ):
@@ -36,7 +36,7 @@ def representation_similarity_analysis(
     @TODO move to metrics repo
     """
     # one hot encode messages by taking padding into account and transforming to one hot
-    messages = one_hot(generated_messages)
+    messages = one_hot(generated_messages, vocab_size + 1)
 
     # if input is metadata
     if test_images is None:
@@ -45,6 +45,8 @@ def representation_similarity_analysis(
     # this is needed since some samples might have been dropped during training to maintain batch_size
     test_images = test_images[: len(messages)]
     test_metadata = test_metadata[: len(messages)]
+
+    test_metadata = np.reshape(one_hot(test_metadata, test_metadata.max() + 1), (len(messages), -1))
 
     assert test_metadata.shape[0] == messages.shape[0]
 
@@ -61,13 +63,18 @@ def representation_similarity_analysis(
         sim_image_features[i] = scipy.spatial.distance.cosine(
             test_images[s1], test_images[s2]
         )
+
         sim_metadata[i] = scipy.spatial.distance.cosine(
             test_metadata[s1], test_metadata[s2]
         )
+        
+        if math.isnan(sim_metadata[i]):
+            sim_metadata[i] = 0
 
         sim_messages[i] = scipy.spatial.distance.cosine(
             messages[s1].flatten(), messages[s2].flatten()
         )
+
         sim_hidden_sender[i] = scipy.spatial.distance.cosine(
             hidden_sender[s1].flatten(), hidden_sender[s2].flatten()
         )

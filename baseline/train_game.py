@@ -309,13 +309,7 @@ def get_sender_optimizer_parameters(args, model):
     return model.sender.parameters()
 
 def get_receiver_optimizer_parameters(args, model):
-    result = list()
-    if args.inference_step or args.multi_task:
-        result += list(model.diagnostic_receiver.parameters())
-    
-    if not args.inference_step or args.multi_task:
-        result += list(model.baseline_receiver.parameters())
-
+    result = list(model.baseline_receiver.parameters())
     result += list(model.visual_module.parameters())
 
     if not args.disabled_properties:
@@ -364,7 +358,8 @@ def baseline(args):
         args.step3,
         baseline_receiver=baseline_receiver,
         diagnostic_receiver=diagnostic_receiver,
-        disabled_properties=args.disabled_properties)
+        disabled_properties=args.disabled_properties,
+        hidden_size=args.hidden_size)
 
     model_path = file_helper.create_unique_model_path(model_name)
 
@@ -381,7 +376,7 @@ def baseline(args):
         torch.save(model.visual_module, file_helper.model_checkpoint_path)
         print('No checkpoint exists. Saving model...Done')
 
-    train_data, valid_data, test_data, valid_meta_data, _ = get_training_data(
+    train_data, valid_data, test_data, valid_meta_data, valid_features = get_training_data(
         device=device,
         batch_size=args.batch_size,
         k=args.k,
@@ -407,12 +402,10 @@ def baseline(args):
                 model_name, args.vocab_size, args.max_length
             )
         )
+
         print(sender)
         if baseline_receiver:
             print(baseline_receiver)
-
-        if diagnostic_receiver:
-            print(diagnostic_receiver)
 
         print("Total number of parameters: {}".format(pytorch_total_params))
 
@@ -489,7 +482,7 @@ def baseline(args):
 
             if iteration % args.log_interval == 0:
 
-                valid_loss_meter, valid_acc_meter, _, = train_helper.evaluate(
+                valid_loss_meter, valid_acc_meter, valid_messages, hidden_sender_parameters, hidden_receiver_parameters = train_helper.evaluate(
                     model,
                     valid_data,
                     valid_meta_data,
@@ -500,6 +493,19 @@ def baseline(args):
                     args.property_one,
                     args.property_two,
                     args.zero_shot)
+
+                metrics_helper.log_metrics(
+                    model,
+                    valid_meta_data,
+                    valid_features,
+                    valid_loss_meter,
+                    valid_acc_meter,
+                    None,
+                    valid_messages,
+                    hidden_sender_parameters,
+                    hidden_receiver_parameters,
+                    None,
+                    iteration)
 
                 new_best = False
                 

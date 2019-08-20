@@ -22,6 +22,8 @@ class ShapesTrainer(nn.Module):
             multi_task,
             multi_task_lambda,
             step3,
+            num_classes_by_model,
+            num_hidden,
             baseline_receiver: ShapesReceiver = None,
             diagnostic_receiver: MessagesReceiver = None,
             extract_features=False,
@@ -43,6 +45,15 @@ class ShapesTrainer(nn.Module):
         self.multi_task = multi_task
         self.multi_task_lambda = multi_task_lambda
         self.disabled_properties = disabled_properties
+
+        fc_layers = []
+        
+        for num_classes in num_classes_by_model:
+            fc_layer = nn.Linear(num_hidden, num_classes)
+            fc_layers.append(fc_layer)
+
+        self.fc_layers = nn.ModuleList(fc_layers)
+        
 
     def _pad(self, messages, seq_lengths):
         """
@@ -75,7 +86,7 @@ class ShapesTrainer(nn.Module):
             target = self.visual_module(target)
             distractors = [self.visual_module(d) for d in distractors]
 
-        messages, lengths, _, _, _ = self.sender.forward(
+        messages, lengths, _, hidden_sender_parameters, _ = self.sender.forward(
             hidden_state=target)
 
         messages = self._pad(messages, lengths)
@@ -83,9 +94,15 @@ class ShapesTrainer(nn.Module):
         if not self.diagnostic_receiver and not self.baseline_receiver:
             return messages
 
+
         final_loss = 0
+        r_transform, hidden_receiver_parameters = self.baseline_receiver.forward(messages=messages)
+
         if self.inference_step or self.multi_task:
-            out = self.diagnostic_receiver.forward(messages, meta_data)
+
+            out = [None for _ in range(5)]
+            for i in range(5):
+                out[i] = self.fc_layers[i].forward(r_transform)
 
             loss = 0
             disabled_loss = 0
@@ -109,12 +126,11 @@ class ShapesTrainer(nn.Module):
                 inference_accuracies[i] = torch.mean((torch.argmax(out_property, dim=1) == current_targets).float()).item()
 
             if not self.multi_task:
-                return loss, None, inference_losses, inference_accuracies, messages
+                return loss, None, inference_losses, inference_accuracies, messages, hidden_sender_parameters, hidden_receiver_parameters
             
             final_loss = self.multi_task_lambda * loss
         
         if not self.inference_step or self.multi_task:
-            r_transform, _ = self.baseline_receiver.forward(messages=messages)
 
             baseline_loss = 0
 
@@ -160,8 +176,8 @@ class ShapesTrainer(nn.Module):
 
             if not self.multi_task:
                 # print(type(baseline_mean_loss), type(baseline_loss), type(baseline_accuracy))
-                return baseline_mean_loss, None, baseline_loss, baseline_accuracy, messages
+                return baseline_mean_loss, None, baseline_loss, baseline_accuracy, messages, hidden_sender_parameters, hidden_receiver_parameters
 
             final_loss += (1 - self.multi_task_lambda) * baseline_mean_loss
 
-            return final_loss, disabled_loss, (inference_losses, baseline_loss), (inference_accuracies, baseline_accuracy), messages
+            return final_loss, disabled_loss, (inference_losses, baseline_loss), (inference_accuracies, baseline_accuracy), messages, hidden_sender_parameters, hidden_receiver_parameters
