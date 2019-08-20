@@ -336,7 +336,7 @@ def baseline(args):
     model_name = train_helper.get_filename_from_baseline_params(args)
     run_folder = file_helper.get_run_folder(args.folder, model_name)
 
-    metrics_helper = MetricsHelper(run_folder, args.seed)
+    metrics_helper = MetricsHelper(run_folder, args.seed, args.vocab_size)
 
     # get sender and receiver models and save them
     sender, baseline_receiver, diagnostic_receiver = get_sender_receiver(device, args)
