@@ -16,8 +16,8 @@ export LD_LIBRARY_PATH=/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.44-GCCcore-5.4.0/lib64
 
 for disabled_property in 0 1 2 3 4
 do
-    for alpha in 0.5 0.2 0.8
+    for alpha in 0.25 0.5 0.75
     do
-        srun python3 -u train_game.py --device cuda --seed 7 --disabled-properties $disabled_property --multi-task --multi-task-lambda $alpha --iterations 30000 >> 'output/multi-disabled-'$disabled_property'-alpha-'$alpha'-seed-42.out'
+        srun python3 -u train_game.py --device cuda --seed 42 --disabled-properties $disabled_property --multi-task --multi-task-lambda $alpha --iterations 30000 --lr 0.1 >> 'output/multi-disabled-'$disabled_property'-alpha-'$alpha'-seed-42.out'
     done
 done

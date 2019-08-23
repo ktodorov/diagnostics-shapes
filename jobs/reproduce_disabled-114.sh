@@ -16,7 +16,7 @@ export LD_LIBRARY_PATH=/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.44-GCCcore-5.4.0/lib64
 
 for disabled_property in 0 1 2 3 4
 do
-    for alpha in 0.5 0.2 0.8
+    for alpha in 0.25 0.5 0.8
     do
         srun python3 -u train_image_recognition.py --log-interval 500 --messages-seed 114 --multi-task --multi-task-lambda $alpha --disabled-properties $disabled_property --iterations 100000 --seed 13 --device cuda >> 'output/reproducing-seed-114-alpha-'$alpha'-disabled-'$disabled_property'.out'
     done

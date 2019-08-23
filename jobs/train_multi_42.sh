@@ -14,7 +14,10 @@ module load cuDNN/7.0.5-CUDA-9.0.176
 module load NCCL/2.0.5-CUDA-9.0.176
 export LD_LIBRARY_PATH=/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.44-GCCcore-5.4.0/lib64:$LD_LIBRARY_PATH
 
-for alpha in 0.2 0.5 0.8
+for alpha in 0.25 0.5 0.75
 do
-    srun python3 -u train_game.py --device cuda --seed 42 --iterations 30000 --multi-task --multi-task-lambda $alpha >> 'output/train-multi-seed-42-alpha-'$alpha'.out'
+    for lr in 0.1
+    do
+        srun python3 -u train_game.py --device cuda --seed 42 --iterations 30000 --lr $lr --multi-task --multi-task-lambda $alpha >> 'output/train-multi-seed-42-alpha-'$alpha'-lr-'$lr'.out'
+    done
 done

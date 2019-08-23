@@ -16,7 +16,7 @@ export LD_LIBRARY_PATH=/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.44-GCCcore-5.4.0/lib64
 
 for disabled_property in 0 1 2 3 4
 do
-    for alpha in 0.5 0.2 0.8
+    for alpha in 0.25 0.5 0.8
     do
         srun python3 -u sample_messages.py --model-path '.\data\checkpoints\raw_e_64_h_64_lr_0.001_max_len_10_k_3_vocab_25_seed_7_btch_size_1024_multi_lambda_'$alpha'_disabled_'$disabled_property'.pt' --output-path '.\data\messages\'  --seed 7 --device cuda --multi-task --multi-task-lambda $alpha --disabled-properties $disabled_property
     done
