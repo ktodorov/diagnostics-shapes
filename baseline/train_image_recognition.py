@@ -205,7 +205,7 @@ def perform_iteration(
     generate_images,
     calculate_f1=False):
 
-    messages = messages.float().to(device)
+    messages = messages.long().to(device)
     original_targets = original_targets.float().to(device)
 
     if model.training:
@@ -234,7 +234,6 @@ def perform_iteration(
     
     targets_list = original_targets_vector.round().long().tolist()
     output_list = output.round().long().tolist()
-    # print(output_list)
     f1_score = 0
 
     if calculate_f1:
