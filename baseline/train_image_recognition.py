@@ -14,7 +14,6 @@ from datasets.message_dataset import MessageDataset
 from enums.dataset_type import DatasetType
 from enums.image_property import ImageProperty
 
-from helpers.game_helper import get_sender_receiver, get_trainer, get_training_data, get_meta_data
 from helpers.train_helper import TrainHelper
 from helpers.file_helper import FileHelper
 from helpers.metrics_helper import MetricsHelper
@@ -24,10 +23,11 @@ from metrics.average_meter import AverageMeter
 
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
+from sklearn import metrics
 
-header = '  Time Epoch Iteration     Progress (%Epoch) |     Loss Accuracy | Best'
+header = '  Time Epoch Iteration    Progress (%Epoch) | F1 Score     Loss Accuracy | Best'
 log_template = ' '.join(
-    '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,| {:>8.6f} {:>8.6f} | {:>4s}'.split(','))
+    '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,| {:>8.6f} {:>8.6f} {:>8.6f} | {:>4s}'.split(','))
 
 def parse_arguments(args):
     # Training settings
@@ -188,7 +188,7 @@ def parse_arguments(args):
 def save_image_grid(images, image_size, rows, iteration, appendix, images_path):
     sample_images = images.view(-1, 3, image_size, image_size)
     
-    samples_grid = make_grid(sample_images, nrow=rows, normalize=True, pad_value=.5, padding=1).cpu().numpy().transpose(1,2,0)
+    samples_grid = make_grid(sample_images, nrow=rows, normalize=False, pad_value=.5, padding=1).cpu().numpy().transpose(1,2,0)
     
     filepath = os.path.join(images_path, f'{appendix}_{iteration}.png')
     plt.imsave(filepath, samples_grid)
@@ -202,7 +202,8 @@ def perform_iteration(
     iteration,
     device,
     images_path,
-    generate_images):
+    generate_images,
+    calculate_f1=False):
 
     messages = messages.float().to(device)
     original_targets = original_targets.float().to(device)
@@ -227,20 +228,36 @@ def perform_iteration(
 
     acc = torch.mean(torch.mean(((original_targets_vector > .5) == (output > .5)).float(), dim=1))
 
-    return loss.item(), acc.item()
+    # precision = metrics.precision_score(
+    #     original_targets_vector, output)
+    # recall = metrics.recall_score(original_targets_vector, output)
+    
+    targets_list = original_targets_vector.round().long().tolist()
+    output_list = output.round().long().tolist()
+    # print(output_list)
+    f1_score = 0
+
+    if calculate_f1:
+        for i in range(len(targets_list)):
+            f1_score += metrics.f1_score(targets_list[i], output_list[i])
+        
+    f1_score = f1_score / len(targets_list)
+    return loss.item(), acc.item(), f1_score
 
 def evaluate(model, criterion, dataloader, iteration, device, images_path):
     loss_meter = AverageMeter()
     acc_meter = AverageMeter()
+    f1_meter = AverageMeter()
 
     model.eval()
 
     for i, (messages, original_targets) in enumerate(dataloader):
-        loss, acc = perform_iteration(model, criterion, None, messages, original_targets, iteration, device, images_path, i==0)
+        loss, acc, f1_score = perform_iteration(model, criterion, None, messages, original_targets, iteration, device, images_path, i==0, True)
         loss_meter.update(loss)
         acc_meter.update(acc)
+        f1_meter.update(f1_score)
 
-    return loss_meter, acc_meter
+    return loss_meter, acc_meter, f1_meter
 
 def generate_unique_name(length, vocabulary_size, seed, inference, step3, multi_task, multi_task_lambda, disabled_properties):
     result = f'max_len_{length}_vocab_{vocabulary_size}_seed_{seed}'
@@ -323,30 +340,8 @@ def baseline(args):
     train_helper = TrainHelper(device)
     train_helper.seed_torch(seed=args.seed)
 
-    # sender = torch.load(args.sender_path, map_location=device)
-    # sender.to(device)
-    # sender.greedy = True
-    # for param in sender.parameters():
-    #     param.requires_grad = False
-    
-    # visual_module = torch.load(
-    #     args.visual_module_path,
-    #     map_location=lambda storage, location: storage)
-    # visual_module.to(device)
-    
-    # for param in visual_module.parameters():
-    #     param.requires_grad = False
-
     model = ImageReceiver()
     model.to(device)
-
-    # train_data, valid_data, _, _, _ = get_training_data(
-    #     device=device,
-    #     batch_size=args.batch_size,
-    #     k=args.k,
-    #     debugging=args.debugging,
-    #     dataset_type=args.dataset_type,
-    #     step3=False)
 
     unique_name = generate_unique_name(
         length=args.max_length,
@@ -412,7 +407,7 @@ def baseline(args):
 
     epoch = 0
     current_patience = args.patience
-    best_accuracy = -1.
+    best_f1_score = -1.
     converged = False
 
     start_time = time.time()
@@ -431,8 +426,8 @@ def baseline(args):
         if not os.path.exists(test_images_path):
             os.mkdir(test_images_path)
 
-        test_loss_meter, test_acc_meter = evaluate(model, criterion, test_dataloader, 0, device, test_images_path)
-        print(f'TEST results: loss: {test_loss_meter.avg} | accuracy: {test_acc_meter.avg}')
+        test_loss_meter, test_acc_meter, test_f1_meter = evaluate(model, criterion, test_dataloader, 0, device, test_images_path)
+        print(f'TEST results: F1: {test_f1_meter.avg} | loss: {test_loss_meter.avg} | accuracy: {test_acc_meter.avg}')
         return
 
 
@@ -443,15 +438,15 @@ def baseline(args):
 
             model.train()
 
-            _, _ = perform_iteration(model, criterion, optimizer, messages, original_targets, iteration, device, images_path, False)
+            _, _, _ = perform_iteration(model, criterion, optimizer, messages, original_targets, iteration, device, images_path, False)
 
             if iteration % args.log_interval == 0:
-                valid_loss_meter, valid_acc_meter = evaluate(model, criterion, validation_dataloader, iteration, device, images_path)
+                valid_loss_meter, valid_acc_meter, valid_f1_meter = evaluate(model, criterion, validation_dataloader, iteration, device, images_path)
 
                 new_best = False
-                average_valid_accuracy = valid_acc_meter.avg
+                average_valid_f1_score = valid_f1_meter.avg
 
-                if average_valid_accuracy < best_accuracy:
+                if average_valid_f1_score < best_f1_score:
                     current_patience -= 1
 
                     if current_patience <= 0:
@@ -460,7 +455,7 @@ def baseline(args):
                         break
                 else:
                     new_best = True
-                    best_accuracy = average_valid_accuracy
+                    best_f1_score = average_valid_f1_score
                     current_patience = args.patience
                     save_model(model_path, model, optimizer, iteration)
 
@@ -472,6 +467,7 @@ def baseline(args):
                     1 + iteration,
                     args.iterations,
                     100. * (1+iteration) / args.iterations,
+                    valid_f1_meter.avg,
                     valid_loss_meter.avg,
                     valid_acc_meter.avg,
                     "BEST" if new_best else ""))
