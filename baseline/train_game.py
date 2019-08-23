@@ -445,7 +445,7 @@ def baseline(args):
             '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,| {:>8.6f} {:>7.6f} | {:>10.6f} {:>10.6f} {:>9.6f} {:>9.6f} {:>9.6f} | {:>9.6f} {:>9.6f} {:>8.6f} {:>8.6f} {:>8.6f} | {:>4s}'.split(','))
 
     if args.test_mode:
-        test_loss_meter, test_acc_meter, _ = train_helper.evaluate(
+        test_loss_meter, test_acc_meter, _, _, _ = train_helper.evaluate(
             model, test_data, test_meta_data, device, args.inference_step, args.multi_task, args.step3, args.property_one, args.property_two, args.zero_shot)
 
         if args.multi_task:
